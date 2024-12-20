@@ -1,0 +1,56 @@
+steps:
+  # Step 1: Attempt to pull the latest image for caching
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        docker pull europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/annotator:latest || exit 0
+    id: PullLatest
+    # This step pulls the latest version of the image to enable cache reuse.
+    # If the image doesn't exist, the command will fail gracefully.
+
+  # Step 2: Build a new Docker image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '-t'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/annotator:latest'
+      - '--cache-from'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/annotator:latest'
+      - '-f'
+      - './cont_intel/api/annotator/Dockerfile'
+      - '.'
+    id: Build
+    # This step builds the Docker image for the annotator service.
+    # The cache is used from the previously pulled image to speed up the build process.
+
+  # Step 3: Push the newly built image to Artifact Registry
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/annotator:latest'
+    id: PushLatest
+    # This step pushes the built image to Artifact Registry for deployment.
+
+  # Step 4: Deploy the image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - annotator
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/annotator:latest'
+      - '--service-account'
+      - 'annotator-sa'
+      - '--region=europe-west2'
+      - '--no-allow-unauthenticated'
+      - '--ingress=all'
+      - '--memory'
+      - '8Gi'
+      - '--cpu'
+      - '2'
+    id: DeployCloudRun
+    # Deploys the Docker image to Cloud Run with specific configurations
+    # like memory, CPU, and region settings.

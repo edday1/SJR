@@ -1,0 +1,35 @@
+steps:
+  # Step 1: Build the Docker image using Kaniko
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+      - --destination=${_IMAGE}
+      - --cache=true
+      - --dockerfile=${_DOCKERPATH}${_MODULE}/Dockerfile
+    id: KanikoBuild
+
+  # Step 2: Deploy the image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_MODULE}
+      - '--image'
+      - ${_IMAGE}
+      - '--service-account'
+      - '${_MODULE}-sa'
+      - '--region=${_REGION}'
+      - '--no-allow-unauthenticated'
+      - '--ingress=internal'
+      - '--tag'
+      - '${_MODULE}'
+    id: DeployCloudRun
+
+substitutions:
+  _MODULE: 'error-handler'  # Module name, used for Docker path, service account, etc.
+  _IMAGE: 'europe-west2-docker.pkg.dev/${PROJECT_ID}/cont-intel-api/${_MODULE}:latest'  # Docker image location
+  _REGION: 'europe-west2'  # Cloud Run region
+  _DOCKERPATH: './cont_intel/api/'  # Path to Dockerfiles
+
+options:
+  dynamic_substitutions: true

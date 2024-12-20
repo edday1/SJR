@@ -1,0 +1,194 @@
+swagger: '2.0'
+info:
+  title: Cont Intel API First Version PROD
+  description: Sample API on API Gateway with a Cloud Run backend
+  version: 1.0.0
+schemes:
+  - https
+produces:
+  - application/json
+x-google-backend:
+  address: https://endpoints-xxxxxxxx-nw.a.run.app/
+  jwt_audience: https://endpoints-xxxxxxxx-nw.a.run.app/
+security:
+  - api_key: [ ]
+paths:
+  /:
+    get:
+      produces:
+        - text/plain
+      parameters: [ ]
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            type: string
+      operationId: read_root__get
+      summary: Read Root
+  /inference/initiate:
+    post:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/InferenceRequest'
+      responses:
+        '201':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/InferenceRequest'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      tags:
+        - inference
+      operationId: initiate_inference_inference_initiate_post
+      summary: Initiate Inference
+  /training/initiate:
+    post:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/TrainRequest'
+      responses:
+        '201':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/TrainRequest'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      tags:
+        - training
+      operationId: initiate_training_training_initiate_post
+      summary: Initiate Training
+  /annotation/initiate:
+    post:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/AnnotationRequest'
+      responses:
+        '201':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/AnnotationRequest'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      tags:
+        - annotation
+      operationId: initiate_annotation_annotation_initiate_post
+      summary: Initiate Annotation
+definitions:
+  HTTPValidationError:
+    properties:
+      detail:
+        items:
+          $ref: '#/definitions/ValidationError'
+        title: Detail
+        type: array
+    title: HTTPValidationError
+    type: object
+  InferenceRequest:
+    properties:
+      model_id:
+        default: test_model_id
+        title: Model Id
+        type: string
+      dataset_reference:
+        default: dataset-1
+        title: Dataset Reference
+        type: string
+      signed_file_url:
+        default: https://www.signed-input-data-url.com
+        title: Signed File Url
+        type: string
+      output_url:
+        default: https://www.example.com
+        title: Output Url
+        type: string
+      explainability:
+        default: false
+        title: Explainability
+        type: boolean
+    title: InferenceRequest
+    type: object
+  TrainRequest:
+    properties:
+      dataset_reference:
+        default: dataset-1
+        title: Dataset Reference
+        type: string
+      source_model_id:
+        default: test_source_model_id
+        title: Source Model Id
+        type: string
+      signed_file_url:
+        default: https://www.signed-input-data-url.com
+        title: Signed File Url
+        type: string
+      output_url:
+        default: https://www.example.com
+        title: Output Url
+        type: string
+      explainability:
+        default: false
+        title: Explainability
+        type: boolean
+    title: TrainRequest
+    type: object
+  AnnotationRequest:
+    properties:
+      signed_file_url:
+        default: https://www.signed-input-data-url.com
+        title: Signed File Url
+        type: string
+      output_url:
+        default: https://www.example.com
+        title: Output Url
+        type: string
+    title: TrainRequest
+    type: object
+  ValidationError:
+    properties:
+      loc:
+        items: { }
+        title: Location
+        type: array
+      msg:
+        title: Message
+        type: string
+      type:
+        title: Error Type
+        type: string
+    required:
+      - loc
+      - msg
+      - type
+securityDefinitions:
+  # This section configures basic authentication with an API key.
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"

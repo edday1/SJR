@@ -1,0 +1,40 @@
+steps:
+  # Step 1: Build the Docker image for the 'pipeline' service using Kaniko
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+      - --verbosity=info
+      - --destination=europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/pipeline:latest
+      - --cache=true
+      - --dockerfile=./cont_intel/api/pipeline/Dockerfile
+    id: KanikoBuild
+
+  # Step 2: Deploy the 'pipeline' service to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - pipeline
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/pipeline:latest'
+      - '--service-account'
+      - 'pipeline-sa'
+      - '--region=europe-west2'
+      - '--no-allow-unauthenticated'
+      - '--ingress=internal'
+      - '--tag'
+      - 'pipeline'
+      - '--memory'
+      - '32Gi'
+      - '--cpu'
+      - '8'
+      - '--timeout=30m'
+      - '--update-env-vars'
+      - 'USE_VERTEX=${_USE_VERTEX}'
+    id: DeployCloudRun
+
+substitutions:
+  _USE_VERTEX: "True"  # Define environment variable for using Vertex AI or not
+
+options:
+  machineType: 'E2_HIGHCPU_32'  # Specify machine type for the build process

@@ -1,0 +1,47 @@
+steps:
+  # Step 1: Attempt to pull the latest image for caching
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        docker pull europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/controller:latest || exit 0
+    id: PullLatest
+
+  # Step 2: Build a new Docker image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '-t'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/controller:latest'
+      - '--cache-from'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/controller:latest'
+      - '-f'
+      - './cont_intel/api/controller/Dockerfile'
+      - '.'
+    id: Build
+
+  # Step 3: Push the newly built image to Artifact Registry
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/controller:latest'
+    id: PushLatest
+
+  # Step 4: Deploy the image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - controller
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/controller:latest'
+      - '--service-account'
+      - 'controller-sa'
+      - '--region=europe-west2'
+      - '--no-allow-unauthenticated'
+      - '--ingress=internal'
+      - '--tag'
+      - 'controller'
+    id: DeployCloudRun

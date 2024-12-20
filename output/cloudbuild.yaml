@@ -1,0 +1,56 @@
+steps:
+  # Step 1: Pull the latest image of the 'output' service from the repository
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - '-c'
+      - >-
+        docker pull europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/output:latest
+        || exit 0
+    id: PullLatest
+
+  # Step 2: Build the Docker image for the 'output' service
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '-t'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/output:latest'
+      - '--cache-from'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/output:latest'
+      - '-f'
+      - './cont_intel/api/output/Dockerfile'
+      - '.'
+    id: Build
+
+  # Step 3: Push the built image to the container registry
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/output:latest'
+    id: PushLatest
+
+  # Step 4: Deploy the 'output' service to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: 
+      - run
+      - deploy
+      - output
+      - '--image'
+      - 'europe-west2-docker.pkg.dev/$PROJECT_ID/cont-intel-api/output:latest'
+      - '--service-account'
+      - 'output-sa'
+      - '--region=europe-west2'
+      - '--no-allow-unauthenticated'
+      - '--ingress=internal'
+      - '--tag'
+      - 'output'
+    id: DeployCloudRun
+
+substitutions:
+  _PROJECT_ID: '${PROJECT_ID}'  # Project ID for the registry and Cloud Run
+  _REGION: 'europe-west2'  # Region for Cloud Run
+  _SERVICE: 'output'  # Service name
+
+options:
+  dynamic_substitutions: true

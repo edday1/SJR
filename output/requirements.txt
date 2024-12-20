@@ -1,0 +1,8 @@
+requests==2.28.1
+google-cloud-pubsub
+google-cloud-logging
+google-cloud-storage
+google-cloud-bigquery
+loguru==0.6.0
+uvicorn==0.18.3
+fastapi==0.85.0
